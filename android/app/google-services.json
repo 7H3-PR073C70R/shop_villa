@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "498558524338",
+    "firebase_url": "https://store-81999-default-rtdb.firebaseio.com",
+    "project_id": "store-81999",
+    "storage_bucket": "store-81999.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:498558524338:android:a046279ce6e8bea45322ab",
+        "android_client_info": {
+          "package_name": "com.example.shop_villa"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "498558524338-b8tjb53qho1bi2b7fl9eplrhlqk7ej8d.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAZJfWXooPt7SRLWOgxFeiMezOajirpPrg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "498558524338-b8tjb53qho1bi2b7fl9eplrhlqk7ej8d.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "498558524338-9207lpu186s2ubf2j4avkrn4sslknui9.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.shopVilla"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
