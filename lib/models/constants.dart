@@ -1,5 +1,6 @@
 class Constants {
   static const List<Map<String, String>> countries = [
+    {'country': 'Select Country', 'code': '234'},
     {'country': 'Afghanistan', 'code': '93'},
     {'country': 'Albania', 'code': '355'},
     {'country': 'Algeria', 'code': '213'},
@@ -243,6 +244,7 @@ class Constants {
   ];
 
   static const List<String> category = [
+    'Select Category',
     'Appliances',
     'Apps & Games',
     'Arts, Crafts, & Sewing',

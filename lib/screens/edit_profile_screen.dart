@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:admob_flutter/admob_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import "package:flutter/material.dart";
@@ -7,8 +8,8 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
+import 'package:shop_villa/models/admob.dart';
 import 'package:shop_villa/models/providers/auth.dart';
-import 'package:shop_villa/screens/auth_screen.dart';
 
 class EditProfile extends StatefulWidget {
   final String currentUserId;
@@ -32,6 +33,10 @@ class _EditProfileState extends State<EditProfile> {
   @override
   initState() {
     super.initState();
+    Admob.initialize(testDeviceIds:[AdmobService().getAdmobId()]);
+    Admob.requestTrackingAuthorization();
+    super.initState();
+  
     getUser();
   }
 
@@ -52,7 +57,7 @@ class _EditProfileState extends State<EditProfile> {
       country.text = doc['country'];
     });
   }
-
+  
   Future<void> _submit() async {
     if (!_formKey.currentState.validate()) {
       // Invalid!
@@ -113,6 +118,10 @@ class _EditProfileState extends State<EditProfile> {
           ),
         ],
       ),
+      bottomSheet: AdmobBanner(
+           adUnitId: AdmobService().getBannerAddId(), 
+           adSize: AdmobBannerSize.FULL_BANNER,
+          ),
       body: isLoading
           ? Center(child: CircularProgressIndicator())
           : ListView(
@@ -193,7 +202,7 @@ class _EditProfileState extends State<EditProfile> {
                                       controller: username,
                                       key: ValueKey('username'),
                                       decoration: InputDecoration(
-                                          labelText: 'Username'),
+                                          labelText: 'Contact Username'),
                                       validator: (value) {
                                         if (value.isEmpty) {
                                           return 'Username cannot be empty';
@@ -211,7 +220,7 @@ class _EditProfileState extends State<EditProfile> {
                                       controller: email,
                                       key: ValueKey('email'),
                                       decoration:
-                                          InputDecoration(labelText: 'Email'),
+                                          InputDecoration(labelText: 'Contact Email'),
                                       validator: (value) {
                                         if (value.isEmpty) {
                                           if (value.isEmpty ||
@@ -227,7 +236,7 @@ class _EditProfileState extends State<EditProfile> {
                                       controller: phone,
                                       key: ValueKey('phone'),
                                       decoration:
-                                          InputDecoration(labelText: 'Phone'),
+                                          InputDecoration(labelText: 'Contact Phone'),
                                       validator: (value) {
                                         if (value.isEmpty) {
                                           return 'Phone number cannot be empty';
@@ -269,8 +278,8 @@ class _EditProfileState extends State<EditProfile> {
                         child: TextButton.icon(
                           onPressed: () {
                             Navigator.of(context).pop();
-                            Navigator.of(context).pushReplacementNamed(AuthScreen.routeName);
-                            Provider.of<AuthProvider>(context).logout();
+                            Navigator.of(context).pushReplacementNamed('/');
+                            Provider.of<AuthProvider>(context, listen: false).logout();
                           },
                           icon: Icon(Icons.cancel, color: Colors.red),
                           label: Text(

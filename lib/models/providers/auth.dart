@@ -174,4 +174,23 @@ class AuthProvider with ChangeNotifier {
 
     notifyListeners();
   }
+
+  Future<void> resetPassword(String email) async{
+    final url = Uri.https(
+        'identitytoolkit.googleapis.com',
+        '/v1/accounts:sendOobCode',
+        {'key': 'AIzaSyAFsFXiKlAF8-CzEISZ3IWlsmJt4Ipc1EE', 
+        "requestType":"PASSWORD_RESET", "email":"$email"});
+
+      try {
+      final response = await http.post(url,
+         );
+      final responseData = json.decode(response.body);
+      if (responseData['error'] != null) {
+        throw HttpException(responseData['error']['message']);
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
 }

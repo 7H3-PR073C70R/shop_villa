@@ -1,10 +1,13 @@
 import 'dart:io';
 
+import 'package:admob_flutter/admob_flutter.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shop_villa/models/admob.dart';
 import 'package:shop_villa/models/constants.dart';
 import 'package:shop_villa/models/providers/auth.dart';
 import '../models/providers/product.dart';
@@ -28,13 +31,9 @@ class _EditProductScreenState extends State<EditProductScreen> {
   final _titleFocusNode = FocusNode();
   final _categoryFocusNode = FocusNode();
   final _addressFocusNode = FocusNode();
-  var _title = '';
-  var _description = '';
+
   var _category = '';
-  var _price = '';
-  var _address = '';
-  var country = '';
-  String userCountry = '';
+
   String category = 'Appliances';
   final _formKey = GlobalKey<FormState>();
   List<File> images = [];
@@ -62,18 +61,12 @@ class _EditProductScreenState extends State<EditProductScreen> {
     'country': '',
   };
 
-  getUserCounty() async {
-    userCountry = await Provider.of<ProductsProvider>(context, listen: false)
-        .getCountry();
-  }
-
   @override
-  void didChangeDependencies() {
+  void didChangeDependencies() async {
     if (_isInit) {
       if (widget.productId != null) {
         _edittedProduct = Provider.of<ProductsProvider>(context, listen: false)
             .findById(widget.productId);
-        getUserCounty();
         _initValue = {
           'title': _edittedProduct.title,
           'description': _edittedProduct.description,
@@ -81,23 +74,28 @@ class _EditProductScreenState extends State<EditProductScreen> {
           'images': _edittedProduct.images,
           'category': _edittedProduct.category,
           'address': _edittedProduct.address,
-          'country': userCountry
+          'country': _edittedProduct.country
         };
 
-        _title = _initValue['title'];
-        _description = _initValue['description'];
-        _price = _initValue['price'];
         _category = _initValue['category'];
-        _address = _initValue['address'];
+
         category = _category;
         imageUrls = _edittedProduct.images;
-        country = userCountry;
-        //print(_initValue['images']);
-        _userId = Provider.of<AuthProvider>(context).userId;
+
+        
+        _userId = Provider.of<AuthProvider>(context, listen: false).userId;
       }
     }
     _isInit = false;
     super.didChangeDependencies();
+  }
+
+  @override
+  initState() {
+    super.initState();
+    Admob.initialize(testDeviceIds:[AdmobService().getAdmobId()]);
+    Admob.requestTrackingAuthorization();
+    super.initState();
   }
 
   @override
@@ -108,6 +106,20 @@ class _EditProductScreenState extends State<EditProductScreen> {
     _categoryFocusNode.dispose();
     _addressFocusNode.dispose();
     super.dispose();
+  }
+
+  Future<File> compressAndGetFile(File file, String targetPath) async {
+    
+    final result = await FlutterImageCompress.compressAndGetFile(
+      file.absolute.path,
+      targetPath,
+      quality: 90,
+      minWidth: 1024,
+      minHeight: 1024,
+      rotate: 90,
+    );
+    
+    return result;
   }
 
   Future<void> _saveForm() async {
@@ -131,7 +143,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
               .ref()
               .child('products')
               .child('$_userId${DateTime.now()}.jpg');
-
+          
           await ref.putFile(images[i]);
           if ((imageUrls.length - 1) >= i) {
             await Provider.of<ProductsProvider>(context, listen: false)
@@ -146,9 +158,9 @@ class _EditProductScreenState extends State<EditProductScreen> {
           description: _edittedProduct.description,
           price: _edittedProduct.price,
           images: imageUrls,
-          category: _edittedProduct.category,
+          category: category,
           address: _edittedProduct.address,
-          country: userCountry,
+          country: await Provider.of<ProductsProvider>(context).getCountry(),
           isFavorite: _edittedProduct.isFavorite);
 
       await Provider.of<ProductsProvider>(context, listen: false)
@@ -161,21 +173,23 @@ class _EditProductScreenState extends State<EditProductScreen> {
                 .ref()
                 .child('products')
                 .child('$_userId${DateTime.now()}.jpg');
-
+               
             await ref.putFile(image);
+            
             imageUrls.add(await ref.getDownloadURL());
           }
-
+          
         _edittedProduct = Product(
             id: _edittedProduct.id,
             title: _edittedProduct.title,
             description: _edittedProduct.description,
             price: _edittedProduct.price,
             images: imageUrls,
-            category: _edittedProduct.category,
+            category: category,
             address: _edittedProduct.address,
-            country: userCountry,
+            country: '',
             isFavorite: _edittedProduct.isFavorite);
+            
         await Provider.of<ProductsProvider>(context, listen: false)
             .addProduct(_edittedProduct);
       } catch (error) {
@@ -224,276 +238,273 @@ class _EditProductScreenState extends State<EditProductScreen> {
             )
           ],
         ),
+         bottomSheet: AdmobBanner(
+           adUnitId: AdmobService().getBannerAddId(), 
+           adSize: AdmobBannerSize.FULL_BANNER,
+          ),
         body: SingleChildScrollView(
           child: _isLoading
               ? Center(
                   child: CircularProgressIndicator(),
                 )
-              : Container(
-                  child: Stack(
-                  children: [
-                    Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(10.0),
-                          child: Form(
-                            key: _formKey,
-                            child: Column(
-                              children: [
-                                TextFormField(
-                                  autocorrect: true,
-                                  initialValue: _title,
-                                  decoration:
-                                      InputDecoration(labelText: 'Title'),
-                                  textInputAction: TextInputAction.next,
-                                  focusNode: _titleFocusNode,
-                                  // controller: _titleController,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _title = value;
-                                    });
-                                  },
-                                  onSaved: (value) {
-                                    _edittedProduct = Product(
-                                        id: _edittedProduct.id,
-                                        title: value,
-                                        description:
-                                            _edittedProduct.description,
-                                        price: _edittedProduct.price,
-                                        images: _edittedProduct.images,
-                                        category: _edittedProduct.category,
-                                        address: _edittedProduct.address,
-                                        country: userCountry,
-                                        isFavorite: _edittedProduct.isFavorite);
-                                  },
-                                  validator: (value) {
-                                    if (value.isEmpty) {
-                                      return 'Title cannot be empty';
-                                    }
-                                    if (value.length < 4) {
-                                      return 'Title too short \n Hint: Description should be at least 4 characters long';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 18.0),
-                                  child: Container(
-                                    //height: 100,
-                                    width: double.infinity,
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      //mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          'Category',
-                                          style: TextStyle(
-                                              color: Colors.grey.shade700),
-                                        ),
-                                        DropdownButton<String>(
-                                          focusNode: _categoryFocusNode,
-                                          dropdownColor: Colors.white,
-                                          value: category,
-                                          onChanged: (value) {
-                                            setState(() {
-                                              category = value;
-                                              _category = category;
-                                            });
-                                          },
-                                          items: Constants.category
-                                              .map((String item) {
-                                            return DropdownMenuItem<String>(
-                                              value: item,
-                                              child: Row(
-                                                children: <Widget>[
-                                                  SizedBox(
-                                                    width: 5,
-                                                  ),
-                                                  Text(
-                                                    item,
-                                                    style: TextStyle(
-                                                        color: Colors.black),
-                                                  ),
-                                                ],
-                                              ),
-                                            );
-                                          }).toList(),
-                                        ),
-                                      ],
+              : Padding(
+                padding: const EdgeInsets.only(bottom: 55.0),
+                child: Container(
+                    child: Stack(
+                    children: [
+                      Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(10.0),
+                            child: Form(
+                              key: _formKey,
+                              child: Column(
+                                children: [
+                                  TextFormField(
+                                    autocorrect: true,
+                                    initialValue: _initValue['title'],
+                                    decoration:
+                                        InputDecoration(labelText: 'Title'),
+                                    textInputAction: TextInputAction.next,
+                                    focusNode: _titleFocusNode,
+                                    // controller: _titleController,
+
+                                    onSaved: (value) {
+                                      _edittedProduct = Product(
+                                          id: _edittedProduct.id,
+                                          title: value,
+                                          description:
+                                              _edittedProduct.description,
+                                          price: _edittedProduct.price,
+                                          images: _edittedProduct.images,
+                                          category: _edittedProduct.category,
+                                          address: _edittedProduct.address,
+                                          country: '',
+                                          isFavorite: _edittedProduct.isFavorite);
+                                    },
+                                    validator: (value) {
+                                      if (value.isEmpty) {
+                                        return 'Title cannot be empty';
+                                      }
+                                      if (value.length < 4) {
+                                        return 'Title too short \n Hint: Description should be at least 4 characters long';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 18.0),
+                                    child: Container(
+                                      //height: 100,
+                                      width: double.infinity,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        //mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            'Category',
+                                            style: TextStyle(
+                                                color: Colors.grey.shade700),
+                                          ),
+                                          DropdownButton<String>(
+                                            focusNode: _categoryFocusNode,
+                                            dropdownColor: Colors.white,
+                                            value: category,
+                                            onChanged: (value) {
+                                              setState(() {
+                                                category = value;
+                                                _category = value;
+                                              });
+                                            },
+                                            items: Constants.category
+                                                .map((String item) {
+                                              return DropdownMenuItem<String>(
+                                                value: item,
+                                                child: Row(
+                                                  children: <Widget>[
+                                                    SizedBox(
+                                                      width: 5,
+                                                    ),
+                                                    Text(
+                                                      item,
+                                                      style: TextStyle(
+                                                          color: Colors.black),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            }).toList(),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                ),
-                                TextFormField(
-                                  autocorrect: true,
-                                  initialValue: _address,
-                                  decoration:
-                                      InputDecoration(labelText: 'Address'),
-                                  textInputAction: TextInputAction.next,
-                                  focusNode: _addressFocusNode,
-                                  //controller: _addressController,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _address = value;
-                                    });
-                                  },
-                                  onSaved: (value) {
-                                    _edittedProduct = Product(
-                                        id: _edittedProduct.id,
-                                        title: _edittedProduct.title,
-                                        description:
-                                            _edittedProduct.description,
-                                        price: _edittedProduct.price,
-                                        images: _edittedProduct.images,
-                                        category: _edittedProduct.category,
-                                        address: value,
-                                        country: userCountry,
-                                        isFavorite: _edittedProduct.isFavorite);
-                                  },
-                                  validator: (value) {
-                                    if (value.isEmpty) {
-                                      return 'Address cannot be empty';
-                                    }
-                                    if (value.length < 10) {
-                                      return 'Address too short \n Hint: Description should be at least 10 characters long. Provide City and Country';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                TextFormField(
-                                  autocorrect: true,
-                                  initialValue: _price,
-                                  decoration:
-                                      InputDecoration(labelText: 'Price'),
-                                  textInputAction: TextInputAction.next,
-                                  keyboardType:
-                                      TextInputType.numberWithOptions(),
-                                  focusNode: _priceFocusNode,
-                                  //controller: _priceController,
-                                  onChanged: (value) {
-                                    _price = value;
-                                  },
-                                  onSaved: (value) {
-                                    _edittedProduct = Product(
-                                        id: _edittedProduct.id,
-                                        title: _edittedProduct.title,
-                                        description:
-                                            _edittedProduct.description,
-                                        price: double.parse(value),
-                                        images: _edittedProduct.images,
-                                        category: _edittedProduct.category,
-                                        address: _edittedProduct.address,
-                                        country: userCountry,
-                                        isFavorite: _edittedProduct.isFavorite);
-                                  },
-                                  validator: (value) {
-                                    if (value.isEmpty) {
-                                      return 'Price cannot be empty';
-                                    }
-                                    if (double.tryParse(value) == null) {
-                                      return 'Enter a valid price';
-                                    }
-                                    if (double.parse(value) <= 0) {
-                                      return 'Please enter a number greater than 0 for the price';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                TextFormField(
-                                  autocorrect: true,
-                                  maxLines: 3,
-                                  initialValue: _description,
-                                  decoration:
-                                      InputDecoration(labelText: 'Description'),
-                                  textInputAction: TextInputAction.next,
-                                  keyboardType: TextInputType.multiline,
-                                  focusNode: _descriptionFocusNode,
-                                  //controller: _descriptionController,
-                                  // onChanged: (value) {
-                                  //   setState(() {
-                                  //     _description = value;
-                                  //   });
-                                  // },
-                                  onSaved: (value) {
-                                    _edittedProduct = Product(
-                                        id: _edittedProduct.id,
-                                        title: _edittedProduct.title,
-                                        description: value,
-                                        price: _edittedProduct.price,
-                                        images: _edittedProduct.images,
-                                        category: _edittedProduct.category,
-                                        address: _edittedProduct.address,
-                                        country: userCountry,
-                                        isFavorite: _edittedProduct.isFavorite);
-                                  },
-                                  validator: (value) {
-                                    if (value.isEmpty) {
-                                      return 'Description cannot be empty';
-                                    }
-                                    if (value.length < 10) {
-                                      return 'Description too short \n Hint: Description should be at least 10 characters long';
-                                    }
-                                    return null;
-                                  },
-                                ),
+                                  TextFormField(
+                                    autocorrect: true,
+                                    initialValue: _initValue['address'],
+                                    decoration:
+                                        InputDecoration(labelText: 'Address'),
+                                    textInputAction: TextInputAction.next,
+                                    focusNode: _addressFocusNode,
+                                    //controller: _addressController,
+
+                                    onSaved: (value) {
+                                      _edittedProduct = Product(
+                                          id: _edittedProduct.id,
+                                          title: _edittedProduct.title,
+                                          description:
+                                              _edittedProduct.description,
+                                          price: _edittedProduct.price,
+                                          images: _edittedProduct.images,
+                                          category: _edittedProduct.category,
+                                          address: value,
+                                          country: '',
+                                          isFavorite: _edittedProduct.isFavorite);
+                                    },
+                                    validator: (value) {
+                                      if (value.isEmpty) {
+                                        return 'Address cannot be empty';
+                                      }
+                                      if (value.length < 10) {
+                                        return 'Address too short \n Hint: Description should be at least 10 characters long. Provide City and Country';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                  TextFormField(
+                                    autocorrect: true,
+                                    initialValue: _initValue['price'],
+                                    decoration:
+                                        InputDecoration(labelText: 'Price'),
+                                    textInputAction: TextInputAction.next,
+                                    keyboardType:
+                                        TextInputType.numberWithOptions(),
+                                    focusNode: _priceFocusNode,
+                                    //controller: _priceController,
+
+                                    onSaved: (value) {
+                                      _edittedProduct = Product(
+                                          id: _edittedProduct.id,
+                                          title: _edittedProduct.title,
+                                          description:
+                                              _edittedProduct.description,
+                                          price: double.parse(value),
+                                          images: _edittedProduct.images,
+                                          category: _edittedProduct.category,
+                                          address: _edittedProduct.address,
+                                          country: '',
+                                          isFavorite: _edittedProduct.isFavorite);
+                                    },
+                                    validator: (value) {
+                                      if (value.isEmpty) {
+                                        return 'Price cannot be empty';
+                                      }
+                                      if (double.tryParse(value) == null) {
+                                        return 'Enter a valid price';
+                                      }
+                                      if (double.parse(value) <= 0) {
+                                        return 'Please enter a number greater than 0 for the price';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                  TextFormField(
+                                    autocorrect: true,
+                                    maxLines: 3,
+                                    initialValue: _initValue['description'],
+                                    decoration:
+                                        InputDecoration(labelText: 'Description'),
+                                    textInputAction: TextInputAction.next,
+                                    keyboardType: TextInputType.multiline,
+                                    focusNode: _descriptionFocusNode,
+                                    //controller: _descriptionController,
+                                    // onChanged: (value) {
+                                    //   setState(() {
+                                    //     _description = value;
+                                    //   });
+                                    // },
+                                    onSaved: (value) {
+                                      _edittedProduct = Product(
+                                          id: _edittedProduct.id,
+                                          title: _edittedProduct.title,
+                                          description: value,
+                                          price: _edittedProduct.price,
+                                          images: _edittedProduct.images,
+                                          category: _edittedProduct.category,
+                                          address: _edittedProduct.address,
+                                          country: '',
+                                          isFavorite: _edittedProduct.isFavorite);
+                                    },
+                                    validator: (value) {
+                                      if (value.isEmpty) {
+                                        return 'Description cannot be empty';
+                                      }
+                                      if (value.length < 10) {
+                                        return 'Description too short \n Hint: Description should be at least 10 characters long';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                ImageGrid(
+                                    pickedImage: _pickedImage,
+                                    isLoadPrevious: widget.isAdd,
+                                    imageUrl:
+                                        imageUrls.isEmpty ? '' : imageUrls[0]),
+                                ImageGrid(
+                                    pickedImage: _pickedImage,
+                                    isLoadPrevious: widget.isAdd,
+                                    imageUrl: imageUrls.isEmpty
+                                        ? ''
+                                        : imageUrls.length > 1
+                                            ? imageUrls[1]
+                                            : '')
                               ],
                             ),
                           ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              ImageGrid(
-                                  pickedImage: _pickedImage,
-                                  isLoadPrevious: widget.isAdd,
-                                  imageUrl:
-                                      imageUrls.isEmpty ? '' : imageUrls[0]),
-                              ImageGrid(
+                          SizedBox(
+                            height: 15,
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                ImageGrid(
                                   pickedImage: _pickedImage,
                                   isLoadPrevious: widget.isAdd,
                                   imageUrl: imageUrls.isEmpty
                                       ? ''
-                                      : imageUrls.length > 1
-                                          ? imageUrls[1]
-                                          : '')
-                            ],
-                          ),
-                        ),
-                        SizedBox(
-                          height: 15,
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              ImageGrid(
-                                pickedImage: _pickedImage,
-                                isLoadPrevious: widget.isAdd,
-                                imageUrl: imageUrls.isEmpty
-                                    ? ''
-                                    : imageUrls.length > 2
-                                        ? imageUrls[2]
-                                        : '',
-                              ),
-                              ImageGrid(
-                                pickedImage: _pickedImage,
-                                isLoadPrevious: widget.isAdd,
-                                imageUrl: imageUrls.isEmpty
-                                    ? ''
-                                    : imageUrls.length > 3
-                                        ? imageUrls[3]
-                                        : '',
-                              )
-                            ],
-                          ),
-                        )
-                      ],
-                    ),
-                  ],
-                )),
+                                      : imageUrls.length > 2
+                                          ? imageUrls[2]
+                                          : '',
+                                ),
+                                ImageGrid(
+                                  pickedImage: _pickedImage,
+                                  isLoadPrevious: widget.isAdd,
+                                  imageUrl: imageUrls.isEmpty
+                                      ? ''
+                                      : imageUrls.length > 3
+                                          ? imageUrls[3]
+                                          : '',
+                                )
+                              ],
+                            ),
+                          )
+                        ],
+                      ),
+                    ],
+                  )),
+              ),
         ));
   }
 }

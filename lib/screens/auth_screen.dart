@@ -1,11 +1,13 @@
 import 'dart:io';
 import 'dart:math';
 
+import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
+import 'package:searchable_dropdown/searchable_dropdown.dart';
 import 'package:shop_villa/models/constants.dart';
 import 'package:shop_villa/models/http_exception.dart';
 import '../models/providers/auth.dart';
@@ -25,6 +27,8 @@ class AuthScreen extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
+                  // Colors.blue,
+                  // Colors.orange
                   Color.fromRGBO(215, 117, 255, 1).withOpacity(0.5),
                   Color.fromRGBO(255, 188, 117, 1).withOpacity(0.9),
                 ],
@@ -112,7 +116,7 @@ class _AuthCardState extends State<AuthCard>
   Animation<Offset> _slideAnimation;
   Animation<double> _opacityAnimation;
   var isNext = false;
-  var _country = 'Nigeria';
+  var _country = 'Select Country';
   var _countryCode = '234';
   @override
   void initState() {
@@ -153,6 +157,7 @@ class _AuthCardState extends State<AuthCard>
       // Invalid!
       return;
     }
+
     _formKey.currentState.save();
     setState(() {
       _isLoading = true;
@@ -164,7 +169,7 @@ class _AuthCardState extends State<AuthCard>
             .login(_emailController.text, _passwordController.text);
       } else {
         // Sign user up
-        if (imageFile != null) {
+        if (imageFile != null && _country != 'Select Country') {
           await Provider.of<AuthProvider>(context, listen: false).signup(
               email: _emailController.text,
               password: _passwordController.text,
@@ -175,7 +180,7 @@ class _AuthCardState extends State<AuthCard>
           //print('done setting up user');
         } else
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('No Profile Picture Selected!!!'),
+            content: Text('No Profile Picture Or Country Selected!!!'),
             backgroundColor: Theme.of(context).errorColor,
           ));
       }
@@ -260,9 +265,9 @@ class _AuthCardState extends State<AuthCard>
         constraints: BoxConstraints(
           minHeight: _authMode == AuthMode.Signup && !isNext
               ? deviceSize.height * 0.90
-              : deviceSize.height * 0.30,
+              : deviceSize.height * 0.40,
         ),
-        width: deviceSize.width * 0.75,
+        width: deviceSize.width * 0.90,
         padding: EdgeInsets.all(16.0),
         duration: Duration(milliseconds: 300),
         child: Form(
@@ -351,93 +356,67 @@ class _AuthCardState extends State<AuthCard>
                       opacity: _opacityAnimation,
                       child: SlideTransition(
                         position: _slideAnimation,
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                child: Text(''),
-                              ),
-                            ),
-                            TextFormField(
-                              enabled: _authMode == AuthMode.Signup,
-                              keyboardType: TextInputType.number,
-                              controller: _phoneController,
-                              key: ValueKey('phone'),
-                              decoration: InputDecoration(
-                                labelText: 'Phone',
-                              ),
-                              validator: _authMode == AuthMode.Signup
-                                  ? (value) {
-                                      if (value.isEmpty) {
-                                        return 'Phone number cannot be empty';
-                                      }
-                                      if (value.length < 6) {
-                                        return 'Phone number must be atleast 7 digits long';
-                                      }
-                                      if (value.contains(' ')) {
-                                        return 'Phone number cannot contain white space';
-                                      }
-                                      return null;
-                                    }
-                                  : null,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                if (isNext)
-                  AnimatedContainer(
-                    duration: Duration(milliseconds: 300),
-                    curve: Curves.easeIn,
-                    constraints: BoxConstraints(
-                        minHeight: _authMode == AuthMode.Signup ? 60 : 0,
-                        maxHeight: _authMode == AuthMode.Signup ? 60 : 0),
-                    child: FadeTransition(
-                      opacity: _opacityAnimation,
-                      child: SlideTransition(
-                        position: _slideAnimation,
                         child: Container(
                           //height: 100,
-                          width: double.infinity,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Country: ',
-                                style: TextStyle(color: Colors.grey.shade700),
-                              ),
-                              DropdownButton<String>(
-                                dropdownColor: Colors.white,
-                                value: _country,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _country = value;
-                                    var selectedCountry = Constants.countries
-                                        .where((element) =>
-                                            element['country'] == value) as Map;
-                                    _countryCode = selectedCountry['code'];
-                                  });
-                                },
-                                items: Constants.countries.map((item) {
-                                  return DropdownMenuItem<String>(
-                                    value: item['country'],
-                                    child: Row(
-                                      children: <Widget>[
-                                        SizedBox(
-                                          width: 5,
-                                        ),
-                                        Text(
-                                          item['country'],
-                                          style: TextStyle(color: Colors.black),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                            ],
+                          width: MediaQuery.of(context).size.width,
+                          child: Container(
+                            //height: 100,
+                            width: MediaQuery.of(context).size.width * 0.75,
+                            child: SearchableDropdown.single(
+                              hint: 'Select A Country',
+                              items: Constants.countries.map((item) {
+                                return DropdownMenuItem<String>(
+                                  value: item['country'],
+                                  child: Row(
+                                    children: <Widget>[
+                                      SizedBox(
+                                        width: 5,
+                                      ),
+                                      Text(
+                                        item['country'],
+                                        style: TextStyle(color: Colors.black),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  _country = value;
+                                });
+                              },
+                            ),
                           ),
+                          // DropdownButton<String>(
+                          //   dropdownColor: Colors.white,
+                          //   value: _country,
+                          //   onChanged: (value) {
+                          //     setState(() {
+                          //       _country = value;
+                          //       var selectedCountry = Constants.countries
+                          //           .where((element) =>
+                          //               element['country'] == value)
+                          //           .toList();
+                          //       _countryCode = selectedCountry[0]['code'];
+                          //     });
+                          //   },
+                          //   items: Constants.countries.map((item) {
+                          //     return DropdownMenuItem<String>(
+                          //       value: item['country'],
+                          //       child: Row(
+                          //         children: <Widget>[
+                          //           SizedBox(
+                          //             width: 5,
+                          //           ),
+                          //           Text(
+                          //             item['country'],
+                          //             style: TextStyle(color: Colors.black),
+                          //           ),
+                          //         ],
+                          //       ),
+                          //     );
+                          //   }).toList(),
+                          // ),
                         ),
 
                         // TextFormField(
@@ -460,13 +439,65 @@ class _AuthCardState extends State<AuthCard>
                       ),
                     ),
                   ),
+                if (isNext)
+                  AnimatedContainer(
+                    duration: Duration(milliseconds: 300),
+                    curve: Curves.easeIn,
+                    constraints: BoxConstraints(
+                        minHeight: _authMode == AuthMode.Signup ? 60 : 0,
+                        maxHeight: _authMode == AuthMode.Signup ? 60 : 0),
+                    child: FadeTransition(
+                      opacity: _opacityAnimation,
+                      child: SlideTransition(
+                        position: _slideAnimation,
+                        child: Row(
+                          children: [
+                            Padding(
+                              padding:
+                                  const EdgeInsets.only(right: 8.0, left: 8.0),
+                              child: Text(_countryCode),
+                            ),
+                            Container(
+                              width: MediaQuery.of(context).size.width * 0.50,
+                              child: TextFormField(
+                                enabled: _authMode == AuthMode.Signup,
+                                keyboardType: TextInputType.number,
+                                controller: _phoneController,
+                                key: ValueKey('phone'),
+                                decoration: InputDecoration(
+                                  labelText: 'Phone',
+                                ),
+                                validator: _authMode == AuthMode.Signup
+                                    ? (value) {
+                                        if (value.isEmpty) {
+                                          return 'Phone number cannot be empty';
+                                        }
+                                        if (value.length < 6) {
+                                          return 'Phone number must be atleast 7 digits long';
+                                        }
+                                        if (value.contains(' ')) {
+                                          return 'Phone number cannot contain white space';
+                                        }
+                                        return null;
+                                      }
+                                    : null,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 if (!isNext)
                   TextFormField(
                     decoration: InputDecoration(labelText: 'E-Mail'),
                     keyboardType: TextInputType.emailAddress,
                     key: ValueKey('email'),
                     validator: (value) {
-                      if (value.isEmpty || !value.contains('@')) {
+                      if (value.isEmpty || !EmailValidator.validate(value, true)) {
+                        return 'Invalid email!';
+                      }
+                      if ((value.contains('gmail') || value.contains('yahoo') || value.contains('hotmail') || value.contains('outlook')) && !value.endsWith('.com')) {
                         return 'Invalid email!';
                       }
                       return null;
@@ -514,6 +545,26 @@ class _AuthCardState extends State<AuthCard>
                         ),
                       ),
                     ),
+                  ),
+                if (!isNext)
+                  Container(
+                    alignment: Alignment.centerRight,
+                    // duration: Duration(milliseconds: 300),
+                    // curve: Curves.easeIn,
+                    constraints: BoxConstraints(
+                        minHeight: _authMode == AuthMode.Login ? 30 : 0,
+                        maxHeight: _authMode == AuthMode.Login ? 30 : 0),
+                    child: GestureDetector(
+                        child: Text('Forget Password?',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            )),
+                        onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                  builder: (_) => ForgotPassword()),
+                            )),
                   ),
                 SizedBox(
                   height: 20,
@@ -583,6 +634,152 @@ class _AuthCardState extends State<AuthCard>
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class ForgotPassword extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final deviceSize = MediaQuery.of(context).size;
+    var _email = '';
+    return Scaffold(
+      body: Stack(
+        children: <Widget>[
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  // Colors.blue,
+                  // Colors.orange
+                  Color.fromRGBO(215, 117, 255, 1).withOpacity(0.5),
+                  Color.fromRGBO(255, 188, 117, 1).withOpacity(0.9),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                stops: [0, 1],
+              ),
+            ),
+          ),
+          SingleChildScrollView(
+            child: Container(
+              height: deviceSize.height,
+              width: deviceSize.width,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  Flexible(
+                    child: Container(
+                      margin: EdgeInsets.only(bottom: 20.0),
+                      padding:
+                          EdgeInsets.symmetric(vertical: 8.0, horizontal: 94.0),
+                      transform: Matrix4.rotationZ(-8 * pi / 180)
+                        ..translate(-10.0),
+                      // ..translate(-10.0),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        color: Colors.deepOrange.shade900,
+                        boxShadow: [
+                          BoxShadow(
+                            blurRadius: 8,
+                            color: Colors.black26,
+                            offset: Offset(0, 2),
+                          )
+                        ],
+                      ),
+                      child: Text(
+                        'Shop Villa',
+                        style: TextStyle(
+                          color:
+                              Theme.of(context).accentTextTheme.headline6.color,
+                          fontSize: 44,
+                          fontFamily: 'Anton',
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                    elevation: 8.0,
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        children: [
+                          TextFormField(
+                            onSaved: (newEmail) {
+                              _email = newEmail;
+                            },
+                            style: TextStyle(color: Colors.grey),
+                            decoration: InputDecoration(
+                              labelText: 'Email',
+                              icon: Icon(
+                                Icons.mail,
+                                color: Colors.grey,
+                              ),
+                              errorStyle: TextStyle(color: Colors.red),
+                              labelStyle: TextStyle(color: Colors.grey),
+                              hintStyle: TextStyle(color: Colors.grey),
+                              focusedBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.grey),
+                              ),
+                              enabledBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.grey),
+                              ),
+                              errorBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.red),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 20),
+                          ElevatedButton(
+                            child: Text('SEND EMAIL'),
+                            onPressed: () async {
+                              if (_email.contains('@') &&
+                                  _email.contains('.')) {
+                                await Provider.of<AuthProvider>(context,
+                                        listen: false)
+                                    .resetPassword(_email);
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                    content: Text(
+                                        'An email has just been sent to you, Click the link provided to complete password reset')));
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                    content: Text(
+                                        'Invalid Email Address. Please check your email address and try again')));
+                              }
+                            },
+                          ),
+                          TextButton(
+                            child: Text('LOGIN'),
+                            onPressed: () {
+                              Navigator.of(context).pushReplacement(
+                                  MaterialPageRoute(
+                                      builder: (_) => AuthScreen()));
+                            },
+                            style: ButtonStyle(
+                                padding: MaterialStateProperty.all(
+                                    EdgeInsets.symmetric(
+                                        horizontal: 30.0, vertical: 4)),
+                                textStyle: MaterialStateProperty.all(TextStyle(
+                                  color: Theme.of(context).primaryColor,
+                                )),
+                                tapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

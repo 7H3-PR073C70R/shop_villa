@@ -66,7 +66,6 @@ class MyApp extends StatelessWidget {
             OrderScreen.routeName: (context) => OrderScreen(),
             UserProductScreen.routeName: (context) => UserProductScreen(),
             SearchScreen.routeName: (context) => SearchScreen(),
-            
           },
         ),
       ),
@@ -78,8 +77,19 @@ class Loading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Shop Villa'),),
-      body: Center(child: Text('Loading...')),
+      body: Container(
+        color: Colors.purpleAccent,
+        child: Center(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 90),
+                child: ListTile(
+                  title: Text('SHOP VILLA', style: TextStyle(color: Colors.white, fontSize: 25, fontWeight: FontWeight.bold),),
+                  subtitle: Text('We Simply Are The Best', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),) ,
+                ),
+              )
+              )),
+      ),
     );
   }
 }

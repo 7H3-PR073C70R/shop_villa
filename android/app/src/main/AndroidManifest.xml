@@ -1,11 +1,36 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.shop_villa">
+    <!--
+    Internet permissions do not affect the `permission_handler` plugin, but are required if your app needs access to
+    the internet.
+    -->
     <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.CAMERA"/>
+
+    <!-- Permissions options for the `storage` group -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+
+    <!-- Permissions options for the `camera` group -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+
+    <!-- Permissions options for the `sms` group -->
+    <uses-permission android:name="android.permission.SEND_SMS"/>
+    <uses-permission android:name="android.permission.RECEIVE_SMS"/>
+    <uses-permission android:name="android.permission.READ_SMS"/>
+    <uses-permission android:name="android.permission.RECEIVE_WAP_PUSH"/>
+    <uses-permission android:name="android.permission.RECEIVE_MMS"/>
+
+    <!-- Permissions options for the `phone` group -->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <uses-permission android:name="android.permission.CALL_PHONE"/>
+
+   
+    <!-- Permissions options for the `accessMediaLocation` group -->
+    <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
+
    <application
-        android:label="shop_villa"
+        android:requestLegacyExternalStorage="true"
+        android:label="Shop Villa"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
@@ -22,6 +47,7 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
+              
             <!-- Displays an Android View that continues showing the launch screen
                  Drawable until Flutter paints its first frame, then this splash
                  screen fades out. A splash screen is useful to avoid any visual
@@ -35,11 +61,52 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <intent-filter>
+              <action android:name="android.media.action.IMAGE_CAPTURE" />
+              <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            
+            <intent-filter>
+              <action android:name="android.intent.action.SEND" />
+              <!-- <data android:type="*/*" /> -->
+              <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+              <action android:name="android.intent.action.SENDTO" />
+              <data android:scheme="mailto" />
+              <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+              <action android:name="android.intent.action.GET_CONTENT" />
+              <!-- <data android:type="image/*" /> -->
+              <category android:name="android.intent.category.DEFAULT" />
+        <!-- The OPENABLE category declares that the returned file is accessible
+             from a content provider that supports OpenableColumns
+             and ContentResolver.openFileDescriptor() -->
+              <category android:name="android.intent.category.OPENABLE" />
+            </intent-filter>
+            <intent-filter>
+              <action android:name="com.google.android.gms.actions.SEARCH_ACTION"/>
+              <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+            <intent-filter>
+              <action android:name="android.intent.action.SEND" />
+              <!-- <data android:type="text/plain" />
+              <data android:type="image/*" /> -->
+              <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+            
+  
+        <meta-data
+          android:name="com.google.android.gms.ads.APPLICATION_ID"
+          android:value="ca-app-pub-8536808003761128~9164325721"/>
+  
+
     </application>
 </manifest>

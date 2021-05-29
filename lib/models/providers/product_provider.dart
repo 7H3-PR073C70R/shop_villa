@@ -7,7 +7,6 @@ import 'product.dart';
 
 class ProductsProvider with ChangeNotifier {
   List<Product> _items = [];
-
   //var _showFavoritesOnly = false;
   final String authToken;
   final String userId;
@@ -21,11 +20,9 @@ class ProductsProvider with ChangeNotifier {
   }
 
   Future<String> getCountry() async {
-    print('runing');
     DocumentSnapshot snapshot =
         await FirebaseFirestore.instance.collection('users').doc(userId).get();
-    print(snapshot['country']);
-    return snapshot['country'];
+    return snapshot['country'].toString();
   }
 
   Future<void> fetchAndSetProduc([bool filterByUser = false]) async {
@@ -64,6 +61,7 @@ class ProductsProvider with ChangeNotifier {
             images: value['images'],
             category: value['category'],
             address: value['address'],
+            creatorId: value['creatorId'],
             country: value['country'],
             isFavorite:
                 favoriteData == null ? false : favoriteData[key] ?? false,
@@ -82,16 +80,23 @@ class ProductsProvider with ChangeNotifier {
   }
 
   Future<void> filterProduct(String country, String category) async {
-    if (country == 'All' && category != 'All') {
-      _items = _items.where((product) => product.category == category);
-    } else if (country != 'All' && category == 'All') {
-      _items = _items.where((product) => product.country == country);
-    } else if (country != 'All' && category != 'All') {
-      _items = _items.where((product) =>
-          product.country == country && product.category == category);
-    } else {
-      _items = items;
+    if (country == 'Select Country' && category != 'Select Category') {
+      //fetchAndSetProduc();
+      _items = _items.where((element) => element.category == category).toList();
+    } else if (country != 'Select Country' && category == 'Select Category') {
+      //fetchAndSetProduc();
+      _items = _items.where((element) => element.country == country).toList();
+    } else if (country != 'Select Country' && category != 'Select Category') {
+      //fetchAndSetProduc();
+      _items = _items
+          .where((element) =>
+              element.country == country && element.category == category)
+          .toList();
     }
+    // else {
+    //   fetchAndSetProduc();
+    // }
+
     notifyListeners();
   }
 
@@ -115,7 +120,7 @@ class ProductsProvider with ChangeNotifier {
             'category': product.category,
             'creatorId': userId,
             'address': product.address,
-            'country': product.country
+            'country': await getCountry()
           }));
       final newProduct = Product(
           id: json.decode(response.body)['name'],
@@ -123,8 +128,9 @@ class ProductsProvider with ChangeNotifier {
           description: product.description,
           price: product.price,
           category: product.category,
+          creatorId: product.creatorId,
           address: product.address,
-          country: product.country,
+          country: await getCountry(),
           images: product.images);
       _items.insert(0, newProduct);
       notifyListeners();
@@ -150,6 +156,7 @@ class ProductsProvider with ChangeNotifier {
               'images': newProduct.images,
               'category': newProduct.category,
               'address': newProduct.address,
+              'creatorId': newProduct.creatorId,
               'price': newProduct.price,
             }));
       } catch (error) {
@@ -178,6 +185,7 @@ class ProductsProvider with ChangeNotifier {
               'images': newProdImages,
               'category': _items[prodIndex].category,
               'address': _items[prodIndex].address,
+              'creatorId': _items[prodIndex].creatorId,
               'price': _items[prodIndex].price,
             }));
       } catch (error) {

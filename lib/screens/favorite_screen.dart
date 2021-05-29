@@ -1,6 +1,10 @@
+import 'package:admob_flutter/admob_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shop_villa/models/admob.dart';
 import 'package:shop_villa/models/providers/product_provider.dart';
+import 'package:shop_villa/widgets/build_images.dart';
+import 'package:shop_villa/widgets/no_item.dart';
 import 'package:shop_villa/widgets/products_grid.dart';
 import '../widgets/app_drawer.dart';
 
@@ -37,8 +41,12 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
     await Provider.of<ProductsProvider>(context, listen: false)
         .fetchAndSetProduc();
   }
-
-
+  @override
+  void initState() {
+    Admob.initialize(testDeviceIds:[AdmobService().getAdmobId()]);
+    Admob.requestTrackingAuthorization();
+    super.initState();
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -48,6 +56,10 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
           IconButton(icon: Icon(Icons.search), onPressed: () {}),
         ],
       ),
+      bottomSheet: AdmobBanner(
+           adUnitId: AdmobService().getBannerAddId(), 
+           adSize: AdmobBannerSize.FULL_BANNER,
+          ),
       drawer: AppDrawer(),
       body: _isLoading
           ? Center(
@@ -57,7 +69,24 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
               onRefresh: () async {
                 _reFreshProduct(context);
               },
-              child: ProductsGrid(true)),
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 55.0),
+                child: Column(
+                  children: [
+                    BuildImages(),
+                    Provider.of<ProductsProvider>(context, listen: false)
+                            .items.where((element) => element.isFavorite).toList()
+                            .isEmpty
+                        ? Center(
+                          child: NoItem(
+                              text:
+                                  '\tOH NO!!! \n\nYou do not have any favorite product yet'),
+                        )
+                        : 
+                    Expanded(child: ProductsGrid(true)),
+                  ],
+                ),
+              )),
     );
   }
 }

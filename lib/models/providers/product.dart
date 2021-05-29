@@ -11,6 +11,7 @@ class Product with ChangeNotifier {
   final String category;
   final String address;
   final String country;
+  final String creatorId;
   bool isFavorite;
 
   Product(
@@ -22,6 +23,7 @@ class Product with ChangeNotifier {
       @required this.category,
       @required this.address,
       @required this.country,
+      this.creatorId,
       this.isFavorite = false});
 
   void _setFavValue(bool newValue) {

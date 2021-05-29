@@ -1,5 +1,7 @@
+import 'package:admob_flutter/admob_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shop_villa/models/admob.dart';
 import 'package:shop_villa/models/providers/product.dart';
 import 'package:shop_villa/models/providers/product_provider.dart';
 import 'package:shop_villa/widgets/product_item.dart';
@@ -25,6 +27,12 @@ class _SearchScreenState extends State<SearchScreen> {
   //   }
   //   super.didChangeDependencies();
   // }
+  @override
+  initState() {
+    Admob.initialize(testDeviceIds: [AdmobService().getAdmobId()]);
+    Admob.requestTrackingAuthorization();
+    super.initState();
+  }
 
   searchedAppBar(BuildContext context) {
     return AppBar(
@@ -96,9 +104,16 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: searchedAppBar(context),
-        body: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: buildSuggestion(query),
+        bottomSheet: AdmobBanner(
+          adUnitId: AdmobService().getBannerAddId(),
+          adSize: AdmobBannerSize.FULL_BANNER,
+        ),
+        body: Padding(
+          padding: const EdgeInsets.only(bottom: 55.0),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: buildSuggestion(query),
+          ),
         ));
   }
 }
